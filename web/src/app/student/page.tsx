@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { Play, BookOpen, BarChart3, LogOut } from "lucide-react";
+import { Play, BookOpen, BarChart3, GraduationCap } from "lucide-react";
 import { LogoutButton } from "@/app/dashboard/logout-button";
 
 export default async function StudentPage() {
@@ -97,22 +97,33 @@ export default async function StudentPage() {
           </p>
         </div>
 
-        {/* CTA: Start practicing */}
-        <Link
-          href="/student/practice"
-          className="bg-brand-700 text-white rounded-2xl p-6 mb-6 hover:bg-brand-800 transition flex items-center justify-between"
-        >
-          <div className="flex items-center gap-4">
-            <Play className="w-10 h-10" />
+        {/* CTAs: Practice + Simulated exam */}
+        <div className="grid sm:grid-cols-2 gap-4 mb-6">
+          <Link
+            href="/student/practice"
+            className="bg-white border border-gray-200 rounded-2xl p-5 hover:border-brand-300 transition flex items-center gap-4"
+          >
+            <Play className="w-8 h-8 text-brand-700 flex-shrink-0" />
             <div>
-              <div className="font-bold text-xl mb-1">Start practising</div>
-              <div className="text-brand-100 text-sm">
-                Get a random approved question from your school
+              <div className="font-bold text-lg text-gray-900 mb-1">Practice</div>
+              <div className="text-gray-600 text-sm">
+                Random approved question
               </div>
             </div>
-          </div>
-          <div className="text-sm font-medium">→</div>
-        </Link>
+          </Link>
+          <Link
+            href="/student/exam"
+            className="bg-brand-700 text-white rounded-2xl p-5 hover:bg-brand-800 transition flex items-center gap-4"
+          >
+            <GraduationCap className="w-8 h-8 flex-shrink-0" />
+            <div>
+              <div className="font-bold text-lg mb-1">Simulated exam</div>
+              <div className="text-brand-100 text-sm">
+                20 questions · 30 min timer
+              </div>
+            </div>
+          </Link>
+        </div>
 
         {/* Subjects grid */}
         <div className="mb-6">
