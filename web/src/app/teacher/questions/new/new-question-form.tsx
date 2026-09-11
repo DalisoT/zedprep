@@ -112,7 +112,7 @@ export function NewQuestionForm({
           question_id: question.id,
           text: o.text.trim(),
           is_correct: o.is_correct,
-          order: i,
+          option_order: i,
         }));
 
       const { error: oError } = await supabase

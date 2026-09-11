@@ -68,7 +68,7 @@ create table if not exists public.question_options (
   question_id     uuid not null references public.questions(id) on delete cascade,
   text            text not null,
   is_correct      boolean not null default false,
-  order           int not null
+  option_order    int not null
 );
 
 create index if not exists question_options_question_idx on public.question_options (question_id);
