@@ -22,14 +22,14 @@ export default async function StudentSignupPage({
   let codeError = null;
 
   if (searchParams.code) {
-    const { data } = await supabase
-      .from("schools")
-      .select("id, name, district")
-      .eq("slug", searchParams.code.toLowerCase())
-      .maybeSingle();
+    // Use the SECURITY DEFINER function so we don't expose contact info
+    // or other school details to anonymous users browsing the signup page.
+    const { data } = await supabase.rpc("find_school_by_slug", {
+      p_slug: searchParams.code.toLowerCase(),
+    });
 
-    if (data) {
-      school = data;
+    if (data && data.length > 0) {
+      school = data[0];
     } else {
       codeError = `We couldn't find a school with code "${searchParams.code}". Double-check with your teacher.`;
     }
