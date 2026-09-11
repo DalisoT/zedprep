@@ -8,25 +8,24 @@ ZedPrep is a Zambian ECZ-aligned exam-prep platform. Full vision, scope, and roa
 
 ## Current status
 
-**Step 2 of the 12-week build plan: complete (pending user running the SQL migration).**
+**Step 3 of the 12-week build plan: complete (pending user running migration 0003).**
 
-Done in Step 2:
-- Supabase project connected: `https://jkfzanjcganzhhmmwcxh.supabase.co` (anon key in `web/.env.local`, git-ignored)
-- Supabase client utilities: `src/lib/supabase/{client,server,middleware}.ts`
-- Middleware for auth state refresh and protected route redirection
-- Initial database migration: `web/supabase/migrations/0001_initial_schema.sql` (tables: schools, users, subjects, topics, subscriptions + RLS policies + `create_school_for_admin` SECURITY DEFINER function)
-- Signup flow: `/signup` → email confirmation → `/onboarding` → `/dashboard`
-- Login flow: `/login` with redirect-back support
-- Onboarding form: collects school name, district, location, contact info, calls the RPC to create school + user + trial subscription
-- Protected dashboard: shows school name, plan, user name, step-by-step roadmap, log-out
-- Landing page nav updated with Log in / Sign up links
-- Documentation: `web/supabase/README.md` with how to apply the migration
+Done in Step 3:
+- Migration `0003_questions_and_invites.sql`: questions, question_options, teacher_invites tables + RLS policies + `accept_teacher_invite` and `get_my_role` SECURITY DEFINER helpers
+- School admin "Invite a teacher" UI on dashboard: generates invite link, copyable
+- Teacher invite acceptance flow: `/invite/[token]` page validates token, handles new signups and logged-in users, prevents self-downgrade for school_admins
+- Teacher portal: `/teacher` landing page with stats + CTAs
+- Teacher question submission form: `/teacher/questions/new` (MCQ + short answer)
+- Teacher's questions list: `/teacher/questions` showing status (pending/approved/rejected)
+- School admin moderation queue: dashboard section with approve/reject buttons + rejection reason field
+- Dashboard stats updated: teacher count, pending count, approved count
 
-Not done (deferred to later steps per the build plan):
-- Teacher upload tool (Step 3)
+Not done (deferred to later steps):
 - Student PWA + simulated exam (Steps 4-5)
 - Payments: MTN MoMo + Airtel + Stripe (Step 6)
 - WhatsApp parent digest (Step 7)
+- Question image upload (Phase 2 — needs Supabase Storage setup)
+- Topic dropdown (Phase 2 — needs structured ECZ topics table)
 
 ## Folder structure
 
@@ -114,16 +113,16 @@ This means: when a request doesn't fit the MVP scope in `BUILD_PLAN.md`, push ba
 
 ## Next planned step (don't start without confirming with user)
 
-**Step 3:** Teacher upload tool.
-- Web form for teachers to add questions (MCQ, short answer, essay — though essays are MVP-out)
-- Mark scheme input
-- Image upload for diagrams (R2)
-- Topic tagging + ECZ syllabus code
-- Moderation queue (manual review by you + 1 trusted teacher initially)
-- Teacher dashboard: see their questions' performance
-- Invite flow: school admin invites teachers via email, teacher signs up, gets linked to school
+**Step 4:** Student PWA + simulated exam.
+- PWA manifest + service worker (offline support)
+- Student signup flow (via school code)
+- Student dashboard: subject + topic browser
+- Practice mode: answer MCQ + short answer questions (uses AI short-answer marking)
+- Past paper browser
+- Simulated exam: 20 random questions, 30-min timer, end-of-exam report
+- Streaks + basic gamification
 
-Until Step 3, the only thing the user (school admin) can do after signing up is see the welcome dashboard. The questions/subjects tables are empty. No student-facing pages yet.
+Until Step 4 is done, students cannot sign up or use the app — teachers and school admins only.
 
 ## Common pitfalls to avoid
 

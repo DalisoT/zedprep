@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { LogOut, Users, BookOpen, BarChart3, Settings } from "lucide-react";
+import { Users, BookOpen, BarChart3, Settings, UserPlus, ClipboardCheck } from "lucide-react";
 import { LogoutButton } from "./logout-button";
+import { InviteTeacherSection } from "./invite-section";
+import { ModerationQueueSection } from "./moderation-section";
 
 export default async function DashboardPage() {
   const supabase = createClient();
@@ -14,16 +16,12 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  // Get the user's profile (includes school_id, role, full_name)
-  // Use maybeSingle() so a missing row returns null instead of throwing —
-  // makes the next check easier to reason about.
   const { data: profile, error: profileError } = await supabase
     .from("users")
     .select("id, full_name, role, school_id, schools(id, name, district, plan, status)")
     .eq("id", user.id)
     .maybeSingle();
 
-  // If no profile row or no school_id, send back to onboarding
   if (!profile) {
     console.warn(
       `[dashboard] No profile row for user ${user.id} (${user.email}). ProfileError:`,
@@ -43,9 +41,31 @@ export default async function DashboardPage() {
     ? profile.schools[0]
     : profile.schools;
 
+  // Counts for the dashboard
+  const [
+    { count: teacherCount },
+    { count: pendingCount },
+    { count: approvedCount },
+  ] = await Promise.all([
+    supabase
+      .from("users")
+      .select("id", { count: "exact", head: true })
+      .eq("school_id", profile.school_id)
+      .in("role", ["teacher", "school_admin"]),
+    supabase
+      .from("questions")
+      .select("id", { count: "exact", head: true })
+      .eq("school_id", profile.school_id)
+      .eq("status", "pending"),
+    supabase
+      .from("questions")
+      .select("id", { count: "exact", head: true })
+      .eq("school_id", profile.school_id)
+      .eq("status", "approved"),
+  ]);
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Top bar */}
       <header className="border-b border-gray-100 bg-white">
         <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
           <Link href="/dashboard" className="flex items-center gap-2">
@@ -64,81 +84,37 @@ export default async function DashboardPage() {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-8">
-        {/* Welcome banner */}
         <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-6">
-          <div className="flex items-start justify-between gap-4 flex-wrap">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-1">
-                Welcome, {profile.full_name}
-              </h1>
-              <p className="text-gray-600">
-                <strong>{school?.name}</strong>
-                {school?.district ? ` · ${school.district}` : ""} ·{" "}
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-brand-50 text-brand-800 capitalize">
-                  {school?.plan} plan
-                </span>
-              </p>
-            </div>
-            <div className="text-right text-sm text-gray-500">
-              {user.email}
-            </div>
-          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">
+            Welcome, {profile.full_name}
+          </h1>
+          <p className="text-gray-600">
+            <strong>{school?.name}</strong>
+            {school?.district ? ` · ${school.district}` : ""} ·{" "}
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-brand-50 text-brand-800 capitalize">
+              {school?.plan} plan
+            </span>
+          </p>
         </div>
 
         {/* Step indicator */}
         <div className="bg-accent-50 border border-accent-200 rounded-2xl p-6 mb-6">
           <h2 className="font-semibold text-gray-900 mb-2">
-            Your school is live 🎉
+            Step 3 is live 🎉
           </h2>
-          <p className="text-sm text-gray-700 mb-3">
-            Step 2 (auth + database foundation) is done. The next steps, in
-            order, will:
+          <p className="text-sm text-gray-700">
+            You can now invite teachers and review their submitted questions.
+            Once you approve a few, students can start practising (Step 4).
           </p>
-          <ol className="text-sm text-gray-700 space-y-1 list-decimal list-inside">
-            <li>
-              <strong>Step 3</strong> — Build the teacher upload tool so your
-              teachers can start adding questions
-            </li>
-            <li>
-              <strong>Step 4</strong> — Build the student PWA so they can
-              practice on their phones
-            </li>
-            <li>
-              <strong>Step 5</strong> — Add simulated exams (timed, randomised
-              questions)
-            </li>
-            <li>
-              <strong>Step 6</strong> — Wire up MTN MoMo so you can pay / be
-              paid
-            </li>
-            <li>
-              <strong>Step 7</strong> — WhatsApp parent digest
-            </li>
-          </ol>
         </div>
 
-        {/* Placeholder feature grid — not functional yet */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Stats */}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {[
-            { icon: Users, title: "Students", desc: "Invite + manage", count: 0 },
-            {
-              icon: BookOpen,
-              title: "Questions",
-              desc: "In your school's bank",
-              count: 0,
-            },
-            {
-              icon: BarChart3,
-              title: "Practice",
-              desc: "Attempts this week",
-              count: 0,
-            },
-            {
-              icon: Settings,
-              title: "Settings",
-              desc: "Plan, billing, team",
-              count: null,
-            },
+            { icon: Users, title: "Teachers", count: teacherCount ?? 0 },
+            { icon: ClipboardCheck, title: "Pending review", count: pendingCount ?? 0 },
+            { icon: BookOpen, title: "Approved questions", count: approvedCount ?? 0 },
+            { icon: Settings, title: "Settings", count: null },
           ].map((item) => (
             <div
               key={item.title}
@@ -150,16 +126,20 @@ export default async function DashboardPage() {
               </div>
               <div className="text-sm text-gray-600">
                 <div className="font-medium text-gray-900">{item.title}</div>
-                <div>{item.desc}</div>
               </div>
             </div>
           ))}
         </div>
 
-        <p className="text-xs text-gray-500 mt-8 text-center">
-          Step 2 of the 12-week build plan is complete. The numbers above will
-          start populating as we add features.
-        </p>
+        {/* Invite section */}
+        <div className="mb-6">
+          <InviteTeacherSection />
+        </div>
+
+        {/* Moderation queue */}
+        <div className="mb-6">
+          <ModerationQueueSection schoolId={profile.school_id} />
+        </div>
       </main>
     </div>
   );

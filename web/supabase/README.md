@@ -21,10 +21,15 @@
 | `schools` | One row per school. Holds name, location, plan, status. |
 | `users` | Profile layer on top of `auth.users`. Holds role, school_id, grade, name. |
 | `subjects` | The 4 MVP subjects (Maths, English, Science, Social Studies), seeded. |
-| `topics` | Empty for now. Teachers add topics in Step 3 (teacher upload tool). |
+| `topics` | Empty for now. Will be populated in Phase 2 with structured ECZ topic list. |
 | `subscriptions` | Tracks each school's plan + billing period. |
+| `questions` | Submitted by teachers, reviewed by school admins (status: pending/approved/rejected). |
+| `question_options` | MCQ answer options. |
+| `teacher_invites` | Token-based invites created by school admins. |
 | `create_school_for_admin(...)` | SECURITY DEFINER function called from the app to onboard a new school in a single RPC. |
-| `get_my_school_id()` | SECURITY DEFINER helper that returns the caller's `school_id` without triggering RLS recursion. Used by the "users can view same-school profiles" policy. |
+| `accept_teacher_invite(token)` | SECURITY DEFINER function called from the app to mark an invite as accepted and return the school_id. |
+| `get_my_school_id()` | SECURITY DEFINER helper that returns the caller's `school_id` without triggering RLS recursion. |
+| `get_my_role()` | SECURITY DEFINER helper that returns the caller's `role` without triggering RLS recursion. |
 | `handle_updated_at()` | Trigger function that auto-updates `updated_at` columns. |
 | RLS policies | Restricts each user to their own school's data. |
 
