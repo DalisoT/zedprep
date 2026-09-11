@@ -46,9 +46,6 @@ export function StudentSignupForm({
     }
 
     // After signup, link the user to the school as a student.
-    // We do this on the client immediately; the server-side
-    // /student route will also handle the case where the user lands
-    // there before this client insert runs.
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -64,6 +61,14 @@ export function StudentSignupForm({
       });
     }
 
+    // If email confirmation is OFF, the session is set immediately.
+    // Hard-navigate to the student dashboard.
+    if (data?.session) {
+      window.location.href = "/student";
+      return;
+    }
+
+    // Email confirmation is ON — user must click the email link first.
     setMessage(
       `Check your email to confirm your account. After confirming, you'll be redirected to ${schoolName}'s student portal.`
     );
