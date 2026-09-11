@@ -1,27 +1,76 @@
 import OpenAI from "openai";
 
-const EMBEDDING_MODEL = "text-embedding-3-small"; // 1536 dims, ~$0.02 per 1M tokens
+// Provider configuration.
+// Order: MiniMax (preferred, since you have the key) → OpenAI → none.
+//
+// To switch providers, set the relevant env var. You can also override the
+// model name with EMBEDDING_MODEL.
 
-let client: OpenAI | null = null;
+type Provider = "minimax" | "openai" | null;
+
+function getProvider(): Provider {
+  if (process.env.MINIMAX_API_KEY) return "minimax";
+  if (process.env.OPENAI_API_KEY) return "openai";
+  return null;
+}
 
 function getClient(): OpenAI | null {
-  if (client) return client;
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return null;
-  client = new OpenAI({ apiKey });
+  const provider = getProvider();
+  if (!provider) return null;
+
+  if (provider === "minimax") {
+    // MiniMax exposes an OpenAI-compatible API at api.minimax.chat
+    return new OpenAI({
+      apiKey: process.env.MINIMAX_API_KEY!,
+      baseURL:
+        process.env.MINIMAX_BASE_URL ?? "https://api.minimax.chat/v1",
+    });
+  }
+
+  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+}
+
+function getModel(): string {
+  // Allow override via env var. Defaults per provider.
+  if (process.env.EMBEDDING_MODEL) return process.env.EMBEDDING_MODEL;
+
+  const provider = getProvider();
+  if (provider === "minimax") return "embo-01"; // MiniMax's embedding model (1024 dims)
+  return "text-embedding-3-small"; // OpenAI default (1536 dims)
+}
+
+let client: OpenAI | null = null;
+let cachedProvider: Provider | null = null;
+
+function getOrCreateClient(): OpenAI | null {
+  const provider = getProvider();
+  if (!provider) return null;
+  // Recreate the client if the provider changed (e.g. env vars updated)
+  if (cachedProvider !== provider) {
+    client = null;
+    cachedProvider = provider;
+  }
+  if (!client) {
+    client = getClient();
+  }
   return client;
 }
 
 export async function embedText(text: string): Promise<number[] | null> {
-  const c = getClient();
+  const c = getOrCreateClient();
   if (!c) return null;
 
-  const response = await c.embeddings.create({
-    model: EMBEDDING_MODEL,
-    input: text.slice(0, 8000), // safety cap
-  });
-
-  return response.data[0]?.embedding ?? null;
+  try {
+    const response = await c.embeddings.create({
+      model: getModel(),
+      input: text.slice(0, 8000), // safety cap
+    });
+    return response.data[0]?.embedding ?? null;
+  } catch (err) {
+    // Log to server console but don't crash the request
+    console.error("[embeddings] failed:", err);
+    return null;
+  }
 }
 
 // Cosine similarity between two unit vectors.
