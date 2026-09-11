@@ -15,14 +15,27 @@ export default async function DashboardPage() {
   }
 
   // Get the user's profile (includes school_id, role, full_name)
-  const { data: profile } = await supabase
+  // Use maybeSingle() so a missing row returns null instead of throwing —
+  // makes the next check easier to reason about.
+  const { data: profile, error: profileError } = await supabase
     .from("users")
     .select("id, full_name, role, school_id, schools(id, name, district, plan, status)")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
-  // If no profile or no school, force onboarding
-  if (!profile?.school_id) {
+  // If no profile row or no school_id, send back to onboarding
+  if (!profile) {
+    console.warn(
+      `[dashboard] No profile row for user ${user.id} (${user.email}). ProfileError:`,
+      profileError
+    );
+    redirect("/onboarding");
+  }
+
+  if (!profile.school_id) {
+    console.warn(
+      `[dashboard] Profile for ${user.email} has no school_id. Sending to onboarding.`
+    );
     redirect("/onboarding");
   }
 

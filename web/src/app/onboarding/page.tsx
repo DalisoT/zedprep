@@ -71,8 +71,10 @@ export default function OnboardingPage() {
       return;
     }
 
-    router.push("/dashboard");
-    router.refresh();
+    // Use full page reload (not router.push) so the dashboard's server-side
+    // query sees fresh cookies + state. router.push can sometimes serve a
+    // cached page that doesn't reflect the just-written data.
+    window.location.href = "/dashboard";
   }
 
   if (checking) {
