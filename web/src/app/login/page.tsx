@@ -9,7 +9,7 @@ import { Loader2 } from "lucide-react";
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirect") || "/dashboard";
+  const requestedRedirect = searchParams.get("redirect");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,15 +27,47 @@ export default function LoginPage() {
       password,
     });
 
-    setLoading(false);
-
     if (error) {
       setError(error.message);
+      setLoading(false);
       return;
     }
 
-    router.push(redirectTo);
-    router.refresh();
+    // Determine the right landing page based on the user's role.
+    // Honour an explicit ?redirect= only if it's an internal path.
+    let target = "/dashboard"; // default for school_admin
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from("users")
+          .select("role")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (profile?.role === "student") {
+          target = "/student";
+        } else if (profile?.role === "teacher") {
+          target = "/teacher";
+        } else if (profile?.role === "school_admin") {
+          target = "/dashboard";
+        } else if (profile?.role === "parent") {
+          target = "/dashboard"; // parents see a future parent dashboard
+        }
+      }
+    } catch {
+      // Fall back to /dashboard if role lookup fails
+    }
+
+    // If a ?redirect= was specified and is internal, use it
+    if (requestedRedirect && requestedRedirect.startsWith("/")) {
+      target = requestedRedirect;
+    }
+
+    // Use full page reload to ensure middleware picks up new cookies
+    window.location.href = target;
   }
 
   return (
