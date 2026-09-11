@@ -29,7 +29,7 @@ export function AcceptInviteForm({
     const supabase = createClient();
 
     // 1. Sign up the auth user
-    const { error: signUpError } = await supabase.auth.signUp({
+    const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -44,6 +44,16 @@ export function AcceptInviteForm({
       return;
     }
 
+    // 2. If email confirmation is OFF, Supabase returns a session immediately
+    // and the user is auto-logged-in. Redirect back to the invite page so
+    // the server-side auto-accept runs (creates the public.users row +
+    // accepts the invite + sends them to /teacher).
+    if (data?.session) {
+      window.location.href = `/invite/${token}`;
+      return;
+    }
+
+    // 3. Email confirmation is ON — user must click the email link first.
     setMessage(
       "Check your email to confirm your account. After clicking the link, you'll be redirected back here to finish joining your school."
     );

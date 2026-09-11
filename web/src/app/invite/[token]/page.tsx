@@ -121,7 +121,9 @@ export default async function InvitePage({ params }: PageProps) {
       );
     }
 
-    // No school yet — accept the invite and link the user as a teacher
+    // No school yet — accept the invite and link the user as a teacher.
+    // Use upsert (not update) because for newly-signed-up users the
+    // public.users row may not exist yet.
     const { error: acceptError } = await supabase.rpc("accept_teacher_invite", {
       p_token: params.token,
     });
@@ -129,11 +131,17 @@ export default async function InvitePage({ params }: PageProps) {
     if (!acceptError) {
       await supabase
         .from("users")
-        .update({
-          role: "teacher",
-          school_id: school?.id,
-        })
-        .eq("id", user.id);
+        .upsert(
+          {
+            id: user.id,
+            full_name:
+              user.user_metadata?.full_name ?? user.email ?? "Teacher",
+            role: "teacher",
+            school_id: school?.id,
+            is_active: true,
+          },
+          { onConflict: "id" }
+        );
 
       redirect("/teacher");
     }
