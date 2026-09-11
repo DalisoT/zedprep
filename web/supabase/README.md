@@ -24,6 +24,7 @@
 | `topics` | Empty for now. Teachers add topics in Step 3 (teacher upload tool). |
 | `subscriptions` | Tracks each school's plan + billing period. |
 | `create_school_for_admin(...)` | SECURITY DEFINER function called from the app to onboard a new school in a single RPC. |
+| `get_my_school_id()` | SECURITY DEFINER helper that returns the caller's `school_id` without triggering RLS recursion. Used by the "users can view same-school profiles" policy. |
 | `handle_updated_at()` | Trigger function that auto-updates `updated_at` columns. |
 | RLS policies | Restricts each user to their own school's data. |
 
