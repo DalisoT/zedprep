@@ -131,14 +131,12 @@ export default function Home() {
           >
             Sign up your school <ArrowRight className="w-5 h-5" />
           </Link>
-          <a
-            href={`https://wa.me/${CONTACT_WHATSAPP}`}
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            href="/student/signup"
             className="border border-gray-300 text-gray-700 px-8 py-4 rounded-lg font-semibold hover:bg-gray-50 transition inline-flex items-center justify-center gap-2"
           >
-            <MessageCircle className="w-5 h-5" /> Talk to us on WhatsApp
-          </a>
+            Join as a student
+          </Link>
         </div>
         <p className="text-sm text-gray-500 mt-6">
           Free for the first 3 schools · One full term · No credit card needed
